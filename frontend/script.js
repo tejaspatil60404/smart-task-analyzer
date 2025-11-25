@@ -89,4 +89,5 @@ function displayResults(data) {
             </div>
         `;
     });
+    document.getElementById("results").scrollIntoView({ behavior: "smooth" });
 }
