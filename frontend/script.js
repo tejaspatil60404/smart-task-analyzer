@@ -25,3 +25,47 @@ function addTask() {
     alert("Task added!");
 }
 
+//Analyze tasks
+function analyzeTasks() {
+    // if user pasted custom JSON
+    let jsonText = document.getElementById("jsonInput").value;
+    if (jsonText.trim() !== "") {
+        try {
+            tasks = JSON.parse(jsonText);
+        } catch {
+            alert("Invalid JSON!");
+            return;
+        }
+    }
+
+    fetch("http://127.0.0.1:8000/api/tasks/analyze/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(tasks)
+    })
+    .then(res => res.json())
+    .then(data => displayResults(data))
+    .catch(err => alert("Error: " + err));
+}
+
+// suggest tasks
+function suggestTasks() {
+    let jsonText = document.getElementById("jsonInput").value;
+    if (jsonText.trim() !== "") {
+        try {
+            tasks = JSON.parse(jsonText);
+        } catch {
+            alert("Invalid JSON!");
+            return;
+        }
+    }
+
+    fetch("http://127.0.0.1:8000/api/tasks/suggest/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(tasks)
+    })
+    .then(res => res.json())
+    .then(data => displayResults(data))
+    .catch(err => alert("Error: " + err));
+}
