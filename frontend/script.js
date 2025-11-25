@@ -69,3 +69,24 @@ function suggestTasks() {
     .then(data => displayResults(data))
     .catch(err => alert("Error: " + err));
 }
+
+//displaying results functions
+function displayResults(data) {
+    const container = document.getElementById("results");
+    container.innerHTML = "";
+
+    data.forEach(task => {
+        let priorityClass =
+            task.score >= 25 ? "high" :
+            task.score >= 15 ? "medium" : "low";
+
+        container.innerHTML += `
+            <div class="task-card ${priorityClass}">
+                <h3>${task.title}</h3>
+                <p><strong>Score:</strong> ${task.score}</p>
+                <p><strong>Reason:</strong> ${task.reason}</p>
+                ${task.suggest_reason ? `<p><strong>Suggest:</strong> ${task.suggest_reason}</p>` : ""}
+            </div>
+        `;
+    });
+}
