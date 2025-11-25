@@ -1,8 +1,8 @@
 from django.urls import path
-from . import views
+from .views import analyze_tasks, suggest_tasks
 
 urlpatterns = [
-    # we'll add endpoints later:
-    # path('analyze/', views.analyze_tasks, name='analyze-tasks'),
-    # path('suggest/', views.suggest_tasks, name='suggest-tasks'),
+    path("analyze/", analyze_tasks, name="analyze-tasks"),
+      path("suggest/", suggest_tasks, name="suggest-tasks")
 ]
+
