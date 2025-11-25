@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from typing import List, Dict, Any
 
-
+# Helper: Safe parse date
 def parse_date(date_str):
     if not date_str:
         return None
@@ -11,24 +11,26 @@ def parse_date(date_str):
         return None
 
 
+# Urgency Score
 def urgency_score(due: date, today: date):
     if due is None:
-        return 5
-    
+        return 5  # Medium urgency
+
     days_left = (due - today).days
 
     if days_left < 0:
-        return 10
+        return 10  # overdue
     elif days_left == 0:
-        return 9
+        return 9   # due today
     elif days_left <= 3:
-        return 7
+        return 7   # due soon
     elif days_left <= 7:
-        return 5
+        return 5   # due this week
     else:
-        return 3
+        return 3   # far deadline
 
 
+# Effort Score
 def effort_score(hours: float):
     if hours <= 2:
         return 10
@@ -37,51 +39,87 @@ def effort_score(hours: float):
     elif hours <= 8:
         return 5
     else:
-        return 3
+        return 3 
 
 
+# Dependency Count
 def compute_dependency_counts(tasks):
-    counts = {}
-    for t in tasks:
-        tid = t.get("id")
-        if tid is not None:
-            counts[tid] = 0
+    counts = {t["id"]: 0 for t in tasks}
 
     for t in tasks:
-        deps = t.get("dependencies", [])
-        for dep in deps:
+        for dep in t.get("dependencies", []):
             if dep in counts:
                 counts[dep] += 1
 
     return counts
 
+# Validating Dependencies
+def validate_dependencies(tasks):
+    task_ids = {t["id"] for t in tasks}
 
-def score_tasks(tasks: List[Dict[str, Any]], today=None):
+    for task in tasks:
+        for dep in task.get("dependencies", []):
+            if dep not in task_ids:
+                raise ValueError(f"Task {task['id']} has invalid dependency ID: {dep}")
+
+
+# MAIN SCORING FUNCTION
+
+def score_tasks(tasks: List[Dict[str, Any]], today: date = None):
+
+    # Apply todays date
     if today is None:
         today = date.today()
 
+    # Auto generate IDs if missing
+    for idx, t in enumerate(tasks):
+        if "id" not in t:
+            t["id"] = idx
+
+    # Validate dependency IDs
+    validate_dependencies(tasks)
+
+    # Count dependents
     dep_counts = compute_dependency_counts(tasks)
+
     scored = []
 
     for task in tasks:
-        tid = task.get("id")
+        tid = task["id"]
 
+        # Safe parsing
         due = parse_date(task.get("due_date"))
-        importance = float(task.get("importance", 5))
-        hours = float(task.get("estimated_hours", 4))
+
+        # Importance clamped 1-10
+        importance_raw = task.get("importance", 5)
+        try:
+            importance = float(importance_raw)
+        except:
+            importance = 5
+        importance = max(1, min(10, importance))
+
+        # Estimated hours with minimum 0.1
+        hours_raw = task.get("estimated_hours", 4)
+        try:
+            hours = float(hours_raw)
+        except:
+            hours = 4
+        hours = max(0.1, hours)
+
         dependents = dep_counts.get(tid, 0)
 
+        # Computing sub-scores
         u = urgency_score(due, today)
         i = importance
         e = effort_score(hours)
-        d = min(dependents * 2, 10)
+        d = min(dependents * 2, 10) 
 
         total = u + i + e + d
 
-        # Build reason
+##### Reason Text
         reasons = []
 
-        # urgency text
+        # urgency reason
         if due is None:
             reasons.append("No due date (medium urgency).")
         else:
@@ -97,7 +135,7 @@ def score_tasks(tasks: List[Dict[str, Any]], today=None):
             else:
                 reasons.append("Due later (low urgency).")
 
-        # importance text
+        # importance reason
         if importance >= 8:
             reasons.append("High importance.")
         elif importance <= 3:
@@ -105,13 +143,13 @@ def score_tasks(tasks: List[Dict[str, Any]], today=None):
         else:
             reasons.append("Medium importance.")
 
-        # effort text
+        # effort reason
         if hours <= 2:
             reasons.append("Quick task (low effort).")
         elif hours >= 8:
             reasons.append("High effort task.")
 
-        # dependent text
+        # dependency reason
         if dependents > 0:
             reasons.append(f"Blocks {dependents} other task(s).")
 
@@ -121,5 +159,6 @@ def score_tasks(tasks: List[Dict[str, Any]], today=None):
             "reason": " ".join(reasons)
         })
 
+    # Sorted by score highest first
     scored.sort(key=lambda t: t["score"], reverse=True)
     return scored
