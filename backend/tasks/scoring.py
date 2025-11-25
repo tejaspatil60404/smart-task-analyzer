@@ -155,6 +155,8 @@ def score_tasks(tasks: List[Dict[str, Any]], today: date = None):
 
         scored.append({
             **task,
+            "importance": importance,          # clamped
+            "estimated_hours": hours,          # clamped
             "score": total,
             "reason": " ".join(reasons)
         })
